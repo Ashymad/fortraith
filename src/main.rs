@@ -123,18 +123,16 @@ impl<V, N> Drop for Node<V, N> where N: Stack {
 }
 
 macro_rules! forth {
-    ({ $EX:ty }) => {
+    ({ $EX:ty }) => { };
+    ({ $EX:ty } return) => {
         $EX
+    };
+    ({ $EX:ty } . $($token:tt)*) => {
+        println!("{}", <$EX as Top>::Result::eval());
+        forth!({ <$EX as Drop>::Result } $($token)*)
     };
     ({ $EX:ty } + $($token:tt)*) => {
         forth!({ <$EX as Plus>::Result } $($token)*)
-    };
-    ({ $EX:ty } . as $out:ident) => {
-        type $out = <$EX as Top>::Result;
-    };
-    ({ $EX:ty } . as $out:ident $($token:tt)+) => {
-        type $out = <$EX as Top>::Result;
-        forth!({ $EX } $($token)*)
     };
     ({ $EX:ty } : $name:ident $($token:tt)*) => {
         forth!(@compile $name ( ) { $EX } $($token)*)
@@ -173,28 +171,28 @@ macro_rules! forth {
     (@bounds $proc:ident; $cmd1:tt) => {
         impl<V, N> $proc for Node<V, N>
         where
-            forth!({ Self }): $cmd1,
+            forth!({ Self } return): $cmd1,
         {
-            type Result = forth!({ Self } $cmd1);
+            type Result = forth!({ Self } $cmd1 return);
         }
     };
     (@bounds $proc:ident; $cmd1:tt $cmd2:tt) => {
         impl<V, N> $proc for Node<V, N>
         where
-            forth!({ Self }): $cmd1,
-            forth!({ Self } $cmd1): $cmd2,
+            forth!({ Self } return): $cmd1,
+            forth!({ Self } $cmd1 return): $cmd2,
         {
-            type Result = forth!({Self} $cmd1 $cmd2);
+            type Result = forth!({Self} $cmd1 $cmd2 return);
         }
     };
     (@bounds $proc:ident; $cmd1:tt $cmd2:tt $cmd3:tt) => {
         impl<V, N> $proc for Node<V, N>
         where
-            forth!({ Self }): $cmd1,
-            forth!({ Self } $cmd1): $cmd2,
-            forth!({ Self } $cmd1 $cmd2): $cmd3
+            forth!({ Self } return): $cmd1,
+            forth!({ Self } $cmd1 return): $cmd2,
+            forth!({ Self } $cmd1 $cmd2 return): $cmd3
         {
-            type Result = forth!({ Self } $cmd1 $cmd2 $cmd3);
+            type Result = forth!({ Self } $cmd1 $cmd2 $cmd3 return);
         }
     };
     ($($token:tt)*) => {
@@ -203,15 +201,12 @@ macro_rules! forth {
 }
 fn main() {
     forth!(
-        1 1 1
+        1 1 3
         : DoubleAdd Plus Plus ;
-        . as Out1
+        .
         1 1 1
         : QuadrupleAdd DoubleAdd DoubleAdd ;
         QuadrupleAdd
-        . as Out2
+        .
     );
-
-    println!("{}", Out1::eval());
-    println!("{}", Out2::eval());
 }
