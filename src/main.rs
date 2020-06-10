@@ -1,27 +1,6 @@
+#![allow(non_camel_case_types)]
 use std::marker::PhantomData;
-
-pub trait Nat {}
-
-pub struct Zero {}
-
-impl Nat for Zero {}
-
-impl<T: Nat> Nat for Succ<T> {}
-
-pub type One = Succ<Zero>;
-pub type Two = Succ<One>;
-pub type Three = Succ<Two>;
-pub type Four = Succ<Three>;
-pub type Five = Succ<Four>;
-pub type Six = Succ<Five>;
-pub type Seven = Succ<Six>;
-pub type Eight = Succ<Seven>;
-pub type Nine = Succ<Eight>;
-pub type Ten = Succ<Nine>;
-
-pub struct Succ<T> where T: Nat {
-    _marker: PhantomData<T>,
-}
+use trait_eval::*;
 
 pub trait Stack {
     type Size: Nat;
@@ -33,93 +12,83 @@ impl Stack for Empty {
     type Size = Zero;
 }
 
-impl<V, N> Stack for Node<V, N> where N: Stack {
+pub struct Node<V, N> {
+    _val: PhantomData<V>,
+    _next: PhantomData<N>,
+}
+
+impl<V, N> Stack for Node<V, N>
+where
+    N: Stack,
+{
     type Size = Succ<N::Size>;
 }
 
-pub struct Node<V, N> {
-    _val: PhantomData<V>,
-    _next: PhantomData<N>
-}
-
-pub trait Top {
+pub trait top {
     type Result;
 }
 
-impl<V, N> Top for Node<V, N> {
+impl<V, N> top for Node<V, N> {
     type Result = V;
 }
 
-pub trait Push<T> {
+pub trait push<T> {
     type Result;
 }
 
-impl<T> Push<T> for Empty {
+impl<T> push<T> for Empty {
     type Result = Node<T, Self>;
 }
 
-impl<T, V, N> Push<T> for Node<V, N> {
+impl<T, V, N> push<T> for Node<V, N> {
     type Result = Node<T, Self>;
 }
 
-pub trait Eval {
-    type Output;
-
-    fn eval() -> Self::Output;
+macro_rules! stack_op {
+    ($name:ident, $op:ident, $type:ident) => {
+        pub trait $name {
+            type Result: Stack;
+        }
+        impl<V, N> $name for Node<V, N>
+        where
+            N: drop + top,
+            V: $type,
+            <N as top>::Result: $type + $op<V>,
+        {
+            type Result = Node<<<N as top>::Result as $op<V>>::Result, <N as drop>::Result>;
+        }
+    };
 }
 
-impl Eval for Zero {
-    type Output = usize;
+stack_op!(plus, Plus, Nat);
+stack_op!(minus, Minus, Nat);
+stack_op!(modulo, Mod, Nat);
+stack_op!(mult, Times, Nat);
+stack_op!(eq, Equals, Nat);
+stack_op!(less, LessThan, Nat);
+stack_op!(and, AndAlso, Bool);
+stack_op!(or, OrElse, Bool);
 
-    #[inline]
-    fn eval() -> Self::Output {
-        0
-    }
-}
-
-impl<T: Nat> Eval for Succ<T> where T: Eval<Output = usize> {
-    type Output = usize;
-
-    #[inline]
-    fn eval() -> Self::Output {
-        1 + T::eval()
-    }
-}
-
-pub trait Add<T: Nat>: Nat {
-    type Result: Nat;
-}
-
-impl<T: Nat> Add<T> for Zero {
-    type Result = T;
-}
-
-impl<T: Nat, U: Nat> Add<T> for Succ<U>
-where
-    U: Add<T>,
-{
-    type Result = Succ<U::Result>;
-}
-
-pub trait Plus {
+pub trait drop {
     type Result: Stack;
 }
 
-impl<V, N> Plus for Node<V, N>
+impl<V, N> drop for Node<V, N>
 where
-    N: Drop + Top,
-    V: Nat + Add<<N as Top>::Result>,
-    <N as Top>::Result: Nat
+    N: Stack,
 {
-    type Result = Node<V::Result, <N as Drop>::Result>;
-}
-
-pub trait Drop {
-    type Result: Stack;
-}
-
-impl<V, N> Drop for Node<V, N> where N: Stack {
     type Result = N;
+}
+
+pub trait dup {
+    type Result: Stack;
+}
+
+impl<V, N> dup for Node<V, N>
+where
+    N: Stack,
+{
+    type Result = Node<V, Self>;
 }
 
 macro_rules! forth {
@@ -128,11 +97,20 @@ macro_rules! forth {
         $EX
     };
     ({ $EX:ty } . $($token:tt)*) => {
-        println!("{}", <$EX as Top>::Result::eval());
-        forth!({ <$EX as Drop>::Result } $($token)*)
+        println!("{}", <$EX as top>::Result::eval());
+        forth!({ <$EX as drop>::Result } $($token)*)
     };
     ({ $EX:ty } + $($token:tt)*) => {
-        forth!({ <$EX as Plus>::Result } $($token)*)
+        forth!({ <$EX as plus>::Result } $($token)*)
+    };
+    ({ $EX:ty } * $($token:tt)*) => {
+        forth!({ <$EX as mult>::Result } $($token)*)
+    };
+    ({ $EX:ty } % $($token:tt)*) => {
+        forth!({ <$EX as modulo>::Result } $($token)*)
+    };
+    ({ $EX:ty } - $($token:tt)*) => {
+        forth!({ <$EX as minus>::Result } $($token)*)
     };
     ({ $EX:ty } : $name:ident $($token:tt)*) => {
         forth!(@compile $name ( ) { $EX } $($token)*)
@@ -140,23 +118,47 @@ macro_rules! forth {
     ({ $EX:ty } ($($comment:tt)*) $($token:tt)*) => {
         forth!({ $EX } $($token)*)
     };
+    ({ $EX:ty } true $($token:tt)*) => {
+        forth!({ <$EX as push<True>>::Result } $($token)*)
+    };
+    ({ $EX:ty } false $($token:tt)*) => {
+        forth!({ <$EX as push<False>>::Result } $($token)*)
+    };
     ({ $EX:ty } 0 $($token:tt)*) => {
-        forth!({ <$EX as Push<Zero>>::Result } $($token)*)
+        forth!({ <$EX as push<Zero>>::Result } $($token)*)
     };
     ({ $EX:ty } 1 $($token:tt)*) => {
-        forth!({ <$EX as Push<One>>::Result } $($token)*)
+        forth!({ <$EX as push<One>>::Result } $($token)*)
     };
     ({ $EX:ty } 2 $($token:tt)*) => {
-        forth!({ <$EX as Push<Two>>::Result } $($token)*)
+        forth!({ <$EX as push<Two>>::Result } $($token)*)
     };
     ({ $EX:ty } 3 $($token:tt)*) => {
-        forth!({ <$EX as Push<Three>>::Result } $($token)*)
+        forth!({ <$EX as push<Three>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 4 $($token:tt)*) => {
+        forth!({ <$EX as push<Four>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 5 $($token:tt)*) => {
+        forth!({ <$EX as push<Five>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 6 $($token:tt)*) => {
+        forth!({ <$EX as push<Six>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 7 $($token:tt)*) => {
+        forth!({ <$EX as push<Seven>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 8 $($token:tt)*) => {
+        forth!({ <$EX as push<Eight>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 9 $($token:tt)*) => {
+        forth!({ <$EX as push<Nine>>::Result } $($token)*)
+    };
+    ({ $EX:ty } 10 $($token:tt)*) => {
+        forth!({ <$EX as push<Ten>>::Result } $($token)*)
     };
     ({ $EX:ty } $tok:tt $($token:tt)*) => {
         forth!({ <$EX as $tok>::Result } $($token)*)
-    };
-    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } ($($comment:tt)*) $($token:tt)*) => {
-        forth!(@compile $name ( $($cmd)* ) { $EX } $($token)*)
     };
     (@compile $name:ident ($($cmd:tt)*) { $EX:ty } ; $($token:tt)*) => {
         pub trait $name {
@@ -164,6 +166,21 @@ macro_rules! forth {
         }
         forth!(@bounds $name; $($cmd)*);
         forth!({ $EX } $($token)*);
+    };
+    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } ($($comment:tt)*) $($token:tt)*) => {
+        forth!(@compile $name ( $($cmd)* ) { $EX } $($token)*)
+    };
+    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } * $($token:tt)*) => {
+        forth!(@compile $name ( $($cmd)* mult ) { $EX } $($token)*)
+    };
+    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } + $($token:tt)*) => {
+        forth!(@compile $name ( $($cmd)* add ) { $EX } $($token)*)
+    };
+    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } - $($token:tt)*) => {
+        forth!(@compile $name ( $($cmd)* minus ) { $EX } $($token)*)
+    };
+    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } % $($token:tt)*) => {
+        forth!(@compile $name ( $($cmd)* modulo ) { $EX } $($token)*)
     };
     (@compile $name:ident ($($cmd:tt)*) { $EX:ty } $tok:tt $($token:tt)*) => {
         forth!(@compile $name ( $($cmd)* $tok ) { $EX } $($token)*)
@@ -201,12 +218,8 @@ macro_rules! forth {
 }
 fn main() {
     forth!(
-        1 1 3
-        : DoubleAdd Plus Plus ;
-        .
-        1 1 1
-        : QuadrupleAdd DoubleAdd DoubleAdd ;
-        QuadrupleAdd
-        .
+        : square ( n -- n*n ) dup * ;
+        6 square . true false and .
+        1 5 less .
     );
 }
