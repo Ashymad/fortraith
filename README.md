@@ -3,7 +3,7 @@ Compile-time compiler that compiles Forth to compile-time trait expressions.
 
 ## What?
 Rust's trait system is Turing complete. This crate uses the principles from
-[trat-eval](https://github.com/doctorn/trait-eval/) to implement necessary
+[trait-eval](https://github.com/doctorn/trait-eval/) to implement necessary
 traits for forth evalutaion and provides a `forth!` macro that transpiles
 forth's syntax to trait expressions.
 
@@ -12,10 +12,10 @@ Here's a simple factorial implementation, the only non-standard word here is
 `pred` which is a decrement operator, equivalent to `1 -`:
 ```rust
 forth!(
-        : factorial (n -- n) 1 swap fact0 ;
-        : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
-        5 factorial .
-      );
+    : factorial (n -- n) 1 swap fact0 ;
+    : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
+    5 factorial .
+);
 ```
 This prints `120`. As you can see not only you can define functions easily, but even conditional recursion is possible!
 Now check out how it looks compiled to trait expressions (courtesy of `cargo expand`):
@@ -56,7 +56,7 @@ println!("{}", <<<Empty as five>::Result as factorial>::Result as top>::Result::
 ```
 Yeah, writing that manually would be no fun.
 
-# What can I do with it?
+## What can I do with it?
 Quite a bit is actually supported as you can see above. Every operation from
 `trait-eval` is re-exported to work on the stack (except `if` which is done
 differently), and a faw additional stack operations are provided. See docs
