@@ -1,4 +1,5 @@
 #![allow(non_camel_case_types)]
+#![recursion_limit = "256"]
 use std::marker::PhantomData;
 use trait_eval::*;
 
@@ -13,11 +14,27 @@ pub struct Stop<N> {
     _next: PhantomData<N>,
 }
 
+macro_rules! pub_trait {
+    ($($name:ident),*) => {
+        $(
+            pub trait $name {
+                type Result;
+            }
+        )*
+    }
+}
 macro_rules! stack_op {
-    ($name:ident, $op:ident, $type:ident) => {
-        pub trait $name {
-            type Result;
+    (1, $name:ident, $op:ident, $type:ident) => {
+        pub_trait!($name);
+        impl<V, N> $name for Node<V, N>
+        where
+            V: $op + $type,
+        {
+            type Result = Node<V::Result, N>;
         }
+    };
+    (2, $name:ident, $op:ident, $type:ident) => {
+        pub_trait!($name);
         impl<V, N> $name for Node<V, N>
         where
             N: drop + top,
@@ -29,20 +46,23 @@ macro_rules! stack_op {
     };
 }
 
-stack_op!(plus, Plus, Nat);
-stack_op!(minus, Minus, Nat);
-stack_op!(modulo, Mod, Nat);
-stack_op!(mult, Times, Nat);
-stack_op!(eq, Equals, Nat);
-stack_op!(less, LessThan, Nat);
-stack_op!(and, AndAlso, Bool);
-stack_op!(or, OrElse, Bool);
+stack_op!(1, not, Not, Bool);
+stack_op!(1, pred, Pred, Nat);
+stack_op!(1, fib, Fib, Nat);
+stack_op!(1, fact, Fact, Nat);
+
+stack_op!(2, plus, Plus, Nat);
+stack_op!(2, minus, Minus, Nat);
+stack_op!(2, modulo, Mod, Nat);
+stack_op!(2, mult, Times, Nat);
+stack_op!(2, eq, Equals, Nat);
+stack_op!(2, less, LessThan, Nat);
+stack_op!(2, and, AndAlso, Bool);
+stack_op!(2, or, OrElse, Bool);
 
 macro_rules! constant {
     ($name:ident, $con:ty) => {
-        pub trait $name {
-            type Result;
-        }
+        pub_trait!($name);
         impl<V, N> $name for Node<V, N> {
             type Result = Node<$con, Self>;
         }
@@ -66,51 +86,65 @@ constant!(ten, Ten);
 constant!(truef, True);
 constant!(falsef, False);
 
-pub trait drop {
-    type Result;
-}
+pub_trait!(drop, dup, swap, rot, top, iff, elsef, then);
+
 impl<V, N> drop for Node<V, N> {
     type Result = N;
 }
 
-pub trait dup {
-    type Result;
-}
 impl<V, N> dup for Node<V, N> {
     type Result = Node<V, Self>;
 }
 
-pub trait top {
-    type Result;
+impl<V, N> swap for Node<V, N>
+where
+    N: top + drop,
+{
+    type Result = Node<<N as top>::Result, Node<V, <N as drop>::Result>>;
 }
+
+impl<V, N> rot for Node<V, N>
+where
+    N: top + drop,
+    <N as drop>::Result: top + drop,
+{
+    type Result = Node<
+        <<N as drop>::Result as top>::Result,
+        Node<V, Node<<N as top>::Result, <<N as drop>::Result as drop>::Result>>,
+    >;
+}
+
 impl<V, N> top for Node<V, N> {
     type Result = V;
 }
 
-pub trait iff {
-    type Result;
-}
 impl<N> iff for Node<True, N> {
     type Result = N;
 }
 impl<N> iff for Node<False, N> {
     type Result = Stop<N>;
 }
-
-pub trait elsef {
-    type Result;
+impl<N> iff for Stop<N> {
+    type Result = Stop<Self>;
 }
+
 impl<V, N> elsef for Node<V, N> {
     type Result = Stop<Self>;
 }
-impl<N> elsef for Stop<N> {
-    type Result = N;
+impl<N> elsef for Stop<Stop<N>> {
+    type Result = Self;
+}
+impl<V, N> elsef for Stop<Node<V, N>> {
+    type Result = Node<V, N>;
+}
+impl elsef for Stop<Empty> {
+    type Result = Empty;
 }
 
-pub trait then {
-    type Result;
-}
 impl<V, N> then for Node<V, N> {
+    type Result = Self;
+}
+impl then for Empty {
     type Result = Self;
 }
 impl<N> then for Stop<N> {
@@ -128,14 +162,18 @@ macro_rules! impl_for_stop {
 }
 
 impl_for_stop!(
-    top, drop, dup, iff, plus, minus, modulo, eq, less, and, or, zero, one, two, three, four, five, six,
-    seven, eight, nine, ten, truef, falsef
+    top, drop, dup, plus, minus, modulo, mult, eq, less, and, or, zero, one, two, three, four,
+    five, six, seven, eight, nine, ten, truef, falsef, swap, rot, not, pred, fact, fib
 );
 
+#[macro_export]
 macro_rules! forth {
     ({ $EX:ty }) => { };
     ({ $EX:ty } return) => {
         $EX
+    };
+    ({ $EX:ty } return type $name:ident) => {
+        type $name = $EX;
     };
     ({ $EX:ty } . $($token:tt)*) => {
         println!("{}", <$EX as top>::Result::eval());
@@ -250,9 +288,18 @@ macro_rules! forth {
     };
 }
 
-fn main() {
-    forth!(
-        : truetotwo if truetotwo else 1 then ;
-        0 false true truetotwo .
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_factorial() {
+        forth!(
+            : factorial (n -- n) 1 swap fact0 ;
+            : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
+            5 factorial
+            top return type Out
+        );
+        assert_eq!(Out::eval(), 120);
+    }
 }
