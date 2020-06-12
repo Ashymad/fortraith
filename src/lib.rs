@@ -8,15 +8,13 @@
 //! #[macro_use] extern crate fortraith;
 //! use fortraith::*;
 //!
-//! fn test_factorial() {
-//!     forth!(
-//!         : factorial (n -- n) 1 swap fact0 ;
-//!         : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
-//!         5 factorial
-//!         return type Out as top
-//!     );
-//!     assert_eq!(Out::eval(), 120);
-//! }
+//! forth!(
+//!     : factorial (n -- n) 1 swap fact0 ;
+//!     : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
+//!     5 factorial
+//!     return type Out as top
+//! );
+//! assert_eq!(Out::eval(), 120);
 //!```
 //! This crate allows the user to exploit traits as much as wanted. It contains around 10% black
 //! trait magic, around 40% of the darkest kind of evil macro magic and around 50% of good quality

@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "fortraith"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "trait_eval",
 ]
