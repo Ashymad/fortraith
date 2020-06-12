@@ -1,6 +1,6 @@
 [package]
 name = "fortraith"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Szymon Mikulicz <szymon.mikulicz@posteo.net>"]
 edition = "2018"
 license = "MIT"
