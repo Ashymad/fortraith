@@ -3,8 +3,13 @@ name = "fortraith"
 version = "0.1.0"
 authors = ["Szymon Mikulicz <szymon.mikulicz@posteo.net>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license-file = "LICENSE"
+keywords = ["const", "traits", "compile-time", "evaluator"]
+categories = ["satire"]
+description = "Compile-time compiler that compiles Forth to compile-time trait expressions."
+homepage = "https://github.com/Ashymad/fortraith"
+repository = "https://github.com/Ashymad/fortraith"
+readme = "README.md"
 
 [dependencies]
 trait_eval = "0"
