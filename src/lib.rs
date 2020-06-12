@@ -1,5 +1,43 @@
+//! # Compile-Time Compiler That Compiles Forth to Trait Expressions
+//!
+//! "We all know Rust's trait system is Turing complete, so tell me, why aren't we exploiting
+//! this???" - [Nathan Corbyn](https://github.com/doctorn/trait-eval)
+//!
+//!```
+//! #![recursion_limit = "256"]
+//! #[macro_use] extern crate fortraith;
+//! use fortraith::*;
+//!
+//! fn test_factorial() {
+//!     forth!(
+//!         : factorial (n -- n) 1 swap fact0 ;
+//!         : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
+//!         5 factorial
+//!         return type Out as top
+//!     );
+//!     assert_eq!(Out::eval(), 120);
+//! }
+//!```
+//! This crate allows the user to exploit traits as much as wanted. It contains around 10% black
+//! trait magic, around 40% of the darkest kind of evil macro magic and around 50% of good quality
+//! docs (you are here!). Everything is tested and ready for production (a joke).
+//!
+//! Although you might not want to really use it in production it serves to show how powerful
+//! Rust's trait system and `macro_rules!` really are.
+//!
+//! If you are new to forth, it is a simple stack-based language. Every operation is done on the
+//! stack and grabs and pushes values into it. For example `2 2 +` would push `2` to the top of the
+//! stack 2 times, take and add them together and push the result back to the stack (So the stack
+//! would have only `4` in it if it was empty before pushing the first `2`). Its simplicity makes
+//! it a usual target for recreational implementation.
+//!
+//! See documentation for traits and the macro to see many examples and learn how to use fortraith,
+//! and abuse the Rust's trait system!
+//!
+//! "Ok, ok, all that's fine, but where is my FizzBuzz implementation?" you might ask. Fear not, as
+//! tradition dictates [FizzBuzz is implemented in fortraith as well](trait.iff.html).
+
 #![allow(non_camel_case_types)]
-#![recursion_limit = "256"]
 use std::marker::PhantomData;
 use trait_eval::*;
 pub use trait_eval::Eval;
@@ -653,20 +691,4 @@ macro_rules! forth {
     ($($token:tt)*) => {
         forth!(@subs () { Empty } $($token)*)
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_factorial() {
-        forth!(
-            : factorial (n -- n) 1 swap fact0 ;
-            : fact0 (n n -- n) dup 1 = if drop else dup rot * swap pred fact0 then ;
-            5 factorial
-            top return type Out
-        );
-        assert_eq!(Out::eval(), 120);
-    }
 }
