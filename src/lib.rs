@@ -32,7 +32,6 @@ macro_rules! pub_trait {
 pub_trait!(
     /// Remove the top element
     /// # Examples
-    /// Drop 2 from the stack:
     /// ```
     /// # #[macro_use] extern crate fortraith;
     /// # use fortraith::*;
@@ -46,7 +45,6 @@ pub_trait!(
 
     /// Duplicate the top element
     /// # Examples
-    /// Duplicate 2 and add it to itself:
     /// ```
     /// # #[macro_use] extern crate fortraith;
     /// # use fortraith::*;
@@ -60,7 +58,6 @@ pub_trait!(
 
     /// Swap two top elements
     /// # Examples
-    /// Swap 1 and 2 and subtract
     /// ```
     /// # #[macro_use] extern crate fortraith;
     /// # use fortraith::*;
@@ -74,7 +71,7 @@ pub_trait!(
 
     /// Rotate three top elements
     /// # Examples
-    /// Rotate 1 2 3 -> 2 3 1 -> 3 1 2
+    /// Rotates 1 2 3 -> 2 3 1 -> 3 1 2
     /// ```
     /// # #[macro_use] extern crate fortraith;
     /// # use fortraith::*;
@@ -163,29 +160,164 @@ pub_trait!(
     then,
 
     /// Apply logical not to the top element
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     true not
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), false);
+    /// ```
     not,
+
     /// Decrement the top element
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     8 pred pred
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 6);
+    /// ```
     pred, 
+
     /// Index the fibonacci sequence with the top element
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     8 fib
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 21);
+    /// ```
     fib,
+
     /// Calculate the factorial of the top element
+    ///
+    /// Yeah you don't have to write the factorial word by yourself, it's builtin thanks to
+    /// trait_eval!
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     4 fact
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 24);
+    /// ```
     fact, 
-    /// ( + ) Add two top elements togeth
+
+    /// ( + ) Add two top elements together
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     9 3 2 + +
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 14);
+    /// ```
     plus, 
-    /// ( - ) Subtract the top element from the second top eleme
+
+    /// ( - ) Subtract the top element from the second top element
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     7 5 -
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 2);
+    /// ```
     minus,
-    /// ( % ) Calculate the rest from dividing the second top element by the top o
+
+    /// ( % ) Calculate the rest from dividing the second top element by the top element
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     7 4 %
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 3);
+    /// ```
     modulo,
-    /// ( * ) Multiply two top elemen
+
+    /// ( * ) Multiply two top elemenents
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     7 4 *
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), 28);
+    /// ```
     mult, 
-    /// ( = ) Chech if two top elements are equ
+
+    /// ( = ) Chech if two top elements are equal
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     1 2 + 3 =
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), true);
+    /// ```
     eq,
-    /// ( < ) Check if the second top element is less than the top eleme
+
+    /// ( < ) Check if the second top element is less than the top elements
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     10 3 <
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), false);
+    /// ```
     less,
+
     /// Logical and two top elements
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     true false and
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), false);
+    /// ```
     and,
+
     /// Logical or two top elements
+    /// # Examples
+    /// ```
+    /// # #[macro_use] extern crate fortraith;
+    /// # use fortraith::*;
+    /// forth!(
+    ///     true false or
+    ///     return type Out as top
+    /// );
+    /// assert_eq!(Out::eval(), true);
+    /// ```
     or,
+
     /// ( 0 ) Constant number
     zero,
     /// ( 1 ) Constant number
