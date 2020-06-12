@@ -289,7 +289,7 @@ pub_trait!(
     /// ```
     modulo,
 
-    /// ( * ) Multiply two top elemenents
+    /// ( * ) Multiply two top elements
     /// # Examples
     /// ```
     /// # #[macro_use] extern crate fortraith;
@@ -302,7 +302,7 @@ pub_trait!(
     /// ```
     mult, 
 
-    /// ( = ) Chech if two top elements are equal
+    /// ( = ) Check if two top elements are equal
     /// # Examples
     /// ```
     /// # #[macro_use] extern crate fortraith;
@@ -523,14 +523,14 @@ impl_for_stop!(
 /// Compile forth to trait expressions
 ///
 /// Every trait from this crate serves as a word than can be used in the forth program.
-/// Macro substitues common names (`+ - * % < = if else true false`, numbers from `1` to `10`) for
-/// corresponging traits to make it easier. Everything inside parentheses `( )` is treated as comments
+/// Macro substitutes common names (`+ - * % < = if else true false`, numbers from `1` to `10`) for
+/// corresponding traits to make it easier. Everything inside parentheses `( )` is treated as comments
 /// and ignored by the macro.
 ///
-/// Additionaly the macro provides a few special expressions (note that these cannot be used inside
+/// Additionally the macro provides a few special expressions (note that these cannot be used inside
 /// a new word definition):
-/// - `.` which is equivalen to `drop` but it inserts a `println` statement
-/// with the dropped value for convinience. You cauld call this cheating, but there is no way to
+/// - `.` which is equivalent to `drop` but it inserts a `println` statement
+/// with the dropped value for convenience. You could call this cheating, but there is no way to
 /// print types at compile time known to me.
 /// ```
 /// # #[macro_use] extern crate fortraith;
@@ -559,7 +559,7 @@ impl_for_stop!(
 ///   `.`, `:;`, or another `return` are not used in the program)
 ///   - `return type $name` anywhere inside the program saves the stack to a type alias `$name`
 ///   - `return type $name as $cmd` anywhere inside the program saves the stack after executing
-///   `$cmd` on the stack to type alias `$name`, but without modyfiing the actual stack in the
+///   `$cmd` on the stack to type alias `$name`, but without modifying the actual stack in the
 ///   program.
 /// See [top](trait.top.html) for examples
 #[macro_export]
@@ -580,29 +580,19 @@ macro_rules! forth {
         println!("{}", <$EX as top>::Result::eval());
         forth!({ <$EX as drop>::Result } $($token)*)
     };
-    ({ $EX:ty } : $name:ident $($token:tt)*) => {
-        forth!(@compile $name ( ) { $EX } $($token)*)
+    ({ $EX:ty } : $name:ident $tok:tt $($token:tt)*) => {
+        forth!(@compile { $EX } $name {()} ($tok) $($token)*)
     };
     ({ $EX:ty } $tok:tt $($token:tt)*) => {
         forth!({ <$EX as $tok>::Result } $($token)*)
     };
-    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } ; $($token:tt)*) => {
+    (@compile { $EX:ty } $name:ident {$(($($cmdl:tt)*))*} ($($cmdr:tt)*) ; $($tbd:tt)*) => {
         pub trait $name {
             type Result;
         }
         impl<N> $name for Stop<N> {
             type Result = Self;
         }
-        forth!(@compile_impl $name; $($cmd)*);
-        forth!({ $EX } $($token)*);
-    };
-    (@compile $name:ident ($($cmd:tt)*) { $EX:ty } $tok:tt $($token:tt)*) => {
-        forth!(@compile $name ( $($cmd)* $tok ) { $EX } $($token)*)
-    };
-    (@compile_impl $name:ident; {$(($($cmdl:tt)*))*} ($($cmdr:tt)*) $new:tt $($tbd:tt)*) => {
-        forth!(@compile_impl $name; {$(($($cmdl)*))* ($($cmdr)*)} ($($cmdr)* $new) $($tbd)*)
-    };
-    (@compile_impl $name:ident; {$(($($cmdl:tt)*))*} ($($cmdr:tt)*)) => {
         impl<V, N> $name for Node<V, N>
         where $(
             forth!({Self} $($cmdl)* return): $cmdr
@@ -610,9 +600,10 @@ macro_rules! forth {
         {
             type Result = forth!({ Self } $($cmdr)* return);
         }
+        forth!({ $EX } $($tbd)*)
     };
-    (@compile_impl $name:ident; $cmd1:tt $($cmds:tt)*) => {
-        forth!(@compile_impl $name; {()} ($cmd1) $($cmds)*)
+    (@compile { $EX:ty } $name:ident {$(($($cmdl:tt)*))*} ($($cmdr:tt)*) $new:tt $($tbd:tt)*) => {
+        forth!(@compile { $EX } $name {$(($($cmdl)*))* ($($cmdr)*)} ($($cmdr)* $new) $($tbd)*)
     };
     (@subs ($($subst:tt)*) {$EX:ty}) => {
         forth!({$EX} $($subst)*)

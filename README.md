@@ -1,13 +1,13 @@
 # `fortraith`
 [![Docs.rs](https://docs.rs/fortraith/badge.svg)](https://docs.rs/fortraith)
+[![Crates.io](https://img.shields.io/crates/v/fortraith.svg?style=plastic)](https://crates.io/crates/fortraith)
 [![Build Status](https://travis-ci.com/Ashymad/fortraith.svg?branch=master)](https://travis-ci.com/Ashymad/fortraith)
-
 Compile-time compiler that compiles Forth to compile-time trait expressions.
 
 ## What?
 Rust's trait system is Turing complete. This crate uses the principles from
 [trait-eval](https://github.com/doctorn/trait-eval/) to implement necessary
-traits for forth evalutaion and provides a `forth!` macro that transpiles
+traits for forth evaluation and provides a `forth!` macro that transpiles
 forth's syntax to trait expressions.
 
 ## Show me!
@@ -62,6 +62,6 @@ Yeah, writing that manually would be no fun.
 ## What can I do with it?
 Quite a bit is actually supported as you can see above. Every operation from
 `trait-eval` is re-exported to work on the stack (except `if` which is done
-differently), and a faw additional stack operations are provided. See [docs](https://docs.rs/fortraith)
+differently), and a few additional stack operations are provided. See [docs](https://docs.rs/fortraith/badge.svg)
 for the details.
 
