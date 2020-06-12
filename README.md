@@ -2,6 +2,7 @@
 [![Docs.rs](https://docs.rs/fortraith/badge.svg)](https://docs.rs/fortraith)
 [![Crates.io](https://img.shields.io/crates/v/fortraith.svg?style=plastic)](https://crates.io/crates/fortraith)
 [![Build Status](https://travis-ci.com/Ashymad/fortraith.svg?branch=master)](https://travis-ci.com/Ashymad/fortraith)
+
 Compile-time compiler that compiles Forth to compile-time trait expressions.
 
 ## What?
