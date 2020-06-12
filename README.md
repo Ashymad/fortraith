@@ -21,7 +21,7 @@ forth!(
     5 factorial .
 );
 ```
-This prints `120`. As you can see not only you can define functions easily, but even conditional recursion is possible!
+This prints `120`. As you can see not only can you define functions easily, but even conditional recursion is possible!
 Now check out how it looks compiled to trait expressions (courtesy of `cargo expand`):
 ```rust
 pub trait factorial {
@@ -63,6 +63,6 @@ Yeah, writing that manually would be no fun.
 ## What can I do with it?
 Quite a bit is actually supported as you can see above. Every operation from
 `trait-eval` is re-exported to work on the stack (except `if` which is done
-differently), and a few additional stack operations are provided. See [docs](https://docs.rs/fortraith/badge.svg)
+differently), and a few additional stack operations are provided. See [docs](https://docs.rs/fortraith)
 for the details.
 
