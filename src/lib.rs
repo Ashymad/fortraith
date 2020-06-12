@@ -85,7 +85,7 @@ pub_trait!(
 
     /// Get the top element
     /// # Examples
-    /// WARNING! This effectively discards the stack, so it can only be used with the `return`
+    /// WARNING! This effectively discards the stack, so it should only be used with the `return`
     /// statement
     /// ```
     /// # #[macro_use] extern crate fortraith;
@@ -485,6 +485,47 @@ impl_for_stop!(
 );
 
 /// Compile forth to trait expressions
+///
+/// Every trait from this crate serves as a word than can be used in the forth program.
+/// Macro substitues common names (`+ - * % < = if else true false`, numbers from `1` to `10`) for
+/// corresponging traits to make it easier. Everything inside parentheses `( )` is treated as comments
+/// and ignored by the macro.
+///
+/// Additionaly the macro provides a few special expressions (note that these cannot be used inside
+/// a new word definition):
+/// - `.` which is equivalen to `drop` but it inserts a `println` statement
+/// with the dropped value for convinience. You cauld call this cheating, but there is no way to
+/// print types at compile time known to me.
+/// ```
+/// # #[macro_use] extern crate fortraith;
+/// # use fortraith::*;
+/// forth!(
+///     10 .
+/// );
+/// // prints "10"
+/// ```
+/// - `: $name $($cmds)* ;` which defines a new word (trait) named `$name` that executes commands
+/// given after the name
+/// ```
+/// # #[macro_use] extern crate fortraith;
+/// # use fortraith::*;
+/// forth!(
+///     : booltonum if 0 else 1 then ;
+///     true booltonum
+///     false booltonum
+///     +
+///     return type Out as top
+/// );
+/// assert_eq!(Out::eval(), 1);
+/// ```
+/// - `return` which can be used in 3 different ways:
+///   - `return` at the end of the program returns the current stack (This can only be used if
+///   `.`, `:;`, or another `return` are not used in the program)
+///   - `return type $name` anywhere inside the program saves the stack to a type alias `$name`
+///   - `return type $name as $cmd` anywhere inside the program saves the stack after executing
+///   `$cmd` on the stack to type alias `$name`, but without modyfiing the actual stack in the
+///   program.
+/// See [top](trait.top.html) for examples
 #[macro_export]
 macro_rules! forth {
     ({ $EX:ty }) => { };
